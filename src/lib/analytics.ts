@@ -19,3 +19,11 @@ export const TRUST_EVENTS = {
   REVOKE_ACCESS_CLICKED: 'revoke_access_clicked',
   SECURE_SYNC_TOOLTIP_OPENED: 'secure_sync_tooltip_opened',
 } as const;
+
+// Single Pane Dashboard events
+export const SINGLE_PANE_EVENTS = {
+  DASHBOARD_EXPAND_SECTION: 'dashboard_expand_section',
+  DASHBOARD_QUICK_ACTION: 'dashboard_quick_action',
+  TIMELINE_FILTER_CHANGED: 'timeline_filter_changed',
+  LAB_TREND_OPENED: 'lab_trend_opened',
+} as const;

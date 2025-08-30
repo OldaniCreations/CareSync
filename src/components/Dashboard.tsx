@@ -15,10 +15,47 @@ import {
   Lock
 } from 'lucide-react';
 import TrustBanner from './TrustBanner';
-import { FEATURE_TRUST_UI_V1 } from '../lib/featureFlags';
+import { FEATURE_TRUST_UI_V1, FEATURE_SINGLE_PANE_V2 } from '../lib/featureFlags';
+import ExpandableCard from './ExpandableCard';
+import ToastContainer from './ToastContainer';
+import { useToast } from '../hooks/useToast';
+import { track, SINGLE_PANE_EVENTS } from '../lib/analytics';
 
 const Dashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState('overview');
+  const { toasts, showSuccess, showError, showInfo, removeToast } = useToast();
+
+  // Quick Action Handlers
+  const handleQuickAction = (action: string, entityId: string, entityType: string) => {
+    track(SINGLE_PANE_EVENTS.DASHBOARD_QUICK_ACTION, {
+      action,
+      entityId,
+      entityType
+    });
+
+    switch (action) {
+      case 'set-reminder':
+        showSuccess(`Reminder set for ${entityType}`);
+        break;
+      case 'request-refill':
+        showInfo(`Refill request sent for ${entityType}`);
+        break;
+      case 'add-to-calendar':
+        showSuccess(`${entityType} added to calendar`);
+        break;
+      case 'directions':
+        showInfo(`Opening directions to ${entityType}`);
+        break;
+      case 'view-trend':
+        showInfo(`Opening trend view for ${entityType}`);
+        break;
+      case 'explain':
+        showInfo(`Showing explanation for ${entityType}`);
+        break;
+      default:
+        showInfo(`Action completed for ${entityType}`);
+    }
+  };
 
   const mockData = {
     patient: {
@@ -34,14 +71,27 @@ const Dashboard: React.FC = () => {
       { type: 'visit', title: 'Primary Care Visit', date: 'Jan 8, 2024', status: 'completed' }
     ],
     upcoming: [
-      { type: 'appointment', title: 'Cardiology Follow-up', date: 'Jan 25, 2024', time: '10:00 AM' },
-      { type: 'lab', title: 'Annual Blood Work', date: 'Feb 1, 2024', time: '9:00 AM' }
+      { type: 'appointment', title: 'Cardiology Follow-up', date: 'Jan 25, 2024', time: '10:00 AM', provider: 'Dr. Sarah Patel', location: 'Cardiology Clinic', status: 'confirmed' },
+      { type: 'lab', title: 'Annual Blood Work', date: 'Feb 1, 2024', time: '9:00 AM', provider: 'LabCorp', location: 'Main Street Lab', status: 'scheduled' }
     ],
     quickStats: [
-      { label: 'Active Medications', value: '2', icon: Pill, color: '#007C9E' },
-      { label: 'Recent Labs', value: '3', icon: Activity, color: '#10b981' },
       { label: 'Upcoming Visits', value: '1', icon: Calendar, color: '#f59e0b' },
+      { label: 'Recent Labs', value: '3', icon: Activity, color: '#10b981' },
+      { label: 'Active Medications', value: '2', icon: Pill, color: '#007C9E' },
       { label: 'Shared Records', value: '5', icon: FileText, color: '#8b5cf6' }
+    ],
+    medications: [
+      { id: 'med-1', name: 'Atorvastatin', dose: '10mg', schedule: 'Daily', nextRefill: 'Jan 30, 2024', status: 'active' },
+      { id: 'med-2', name: 'Metformin', dose: '500mg', schedule: 'Twice daily', nextRefill: 'Jan 25, 2024', status: 'active' }
+    ],
+    labs: [
+      { id: 'lab-1', name: 'CBC Panel', date: 'Jan 12, 2024', status: 'normal', results: { wbc: 6.2, hgb: 13.4, plt: 245 }, trend: [6.1, 6.3, 6.2, 6.0, 6.2] },
+      { id: 'lab-2', name: 'Lipid Panel', date: 'Sep 8, 2023', status: 'borderline', results: { total: 220, hdl: 45, ldl: 140, trig: 180 }, trend: [225, 220, 215, 220, 220] },
+      { id: 'lab-3', name: 'A1C', date: 'Sep 8, 2023', status: 'normal', results: { a1c: 5.8 }, trend: [5.9, 5.8, 5.7, 5.8, 5.8] }
+    ],
+    visits: [
+      { id: 'visit-1', title: 'Cardiology Follow-up', date: 'Jan 25, 2024', time: '10:00 AM', provider: 'Dr. Sarah Patel', location: 'Cardiology Clinic', status: 'confirmed', type: 'appointment' },
+      { id: 'visit-2', title: 'Annual Blood Work', date: 'Feb 1, 2024', time: '9:00 AM', provider: 'LabCorp', location: 'Main Street Lab', status: 'scheduled', type: 'lab' }
     ]
   };
 
@@ -65,7 +115,114 @@ const Dashboard: React.FC = () => {
               ))}
             </div>
 
-            {/* Recent Activity */}
+
+
+            {/* Expandable Cards */}
+            <div className="expandable-cards-section">
+              <ExpandableCard title="Upcoming Visits" count={mockData.visits.length} defaultExpanded={true}>
+                <div className="visits-table">
+                  <div className="table-header">
+                    <span>Date & Time</span>
+                    <span>Provider</span>
+                    <span>Location</span>
+                    <span>Status</span>
+                    <span>Actions</span>
+                  </div>
+                  {mockData.visits.map((visit) => (
+                    <div key={visit.id} className="table-row">
+                      <span>{visit.date} at {visit.time}</span>
+                      <span>{visit.provider}</span>
+                      <span>{visit.location}</span>
+                      <span className={`status ${visit.status}`}>{visit.status}</span>
+                      <div className="action-buttons">
+                        <button 
+                          className="action-btn primary"
+                          onClick={() => handleQuickAction('add-to-calendar', visit.id, visit.title)}
+                        >
+                          Add to Calendar
+                        </button>
+                        <button 
+                          className="action-btn secondary"
+                          onClick={() => handleQuickAction('directions', visit.id, visit.location)}
+                        >
+                          Directions
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </ExpandableCard>
+
+              <ExpandableCard title="Recent Labs" count={mockData.labs.length}>
+                <div className="labs-table">
+                  <div className="table-header">
+                    <span>Test</span>
+                    <span>Date</span>
+                    <span>Status</span>
+                    <span>Trend</span>
+                    <span>Actions</span>
+                  </div>
+                  {mockData.labs.map((lab) => (
+                    <div key={lab.id} className="table-row">
+                      <span>{lab.name}</span>
+                      <span>{lab.date}</span>
+                      <span className={`status ${lab.status}`}>{lab.status}</span>
+                      <span className="trend-sparkline">📈</span>
+                      <div className="action-buttons">
+                        <button 
+                          className="action-btn primary"
+                          onClick={() => handleQuickAction('view-trend', lab.id, lab.name)}
+                        >
+                          View Trend
+                        </button>
+                        <button 
+                          className="action-btn secondary"
+                          onClick={() => handleQuickAction('explain', lab.id, lab.name)}
+                        >
+                          Explain
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </ExpandableCard>
+
+              <ExpandableCard title="Active Medications" count={mockData.medications.length}>
+                <div className="medications-table">
+                  <div className="table-header">
+                    <span>Medication</span>
+                    <span>Dose</span>
+                    <span>Schedule</span>
+                    <span>Next Refill</span>
+                    <span>Actions</span>
+                  </div>
+                  {mockData.medications.map((med) => (
+                    <div key={med.id} className="table-row">
+                      <span>{med.name}</span>
+                      <span>{med.dose}</span>
+                      <span>{med.schedule}</span>
+                      <span>{med.nextRefill}</span>
+                      <div className="action-buttons">
+                        <button 
+                          className="action-btn primary"
+                          onClick={() => handleQuickAction('set-reminder', med.id, med.name)}
+                        >
+                          Set Reminder
+                        </button>
+                        <button 
+                          className="action-btn secondary"
+                          onClick={() => handleQuickAction('request-refill', med.id, med.name)}
+                        >
+                          Request Refill
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </ExpandableCard>
+            </div>
+
+            {/* Recent Activity - Now Below */}
             <div className="activity-section">
               <h3>Recent Activity</h3>
               <div className="activity-list">
@@ -81,26 +238,6 @@ const Dashboard: React.FC = () => {
                       <p>{activity.date}</p>
                     </div>
                     <span className={`status ${activity.status}`}>{activity.status}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Upcoming */}
-            <div className="upcoming-section">
-              <h3>Upcoming</h3>
-              <div className="upcoming-list">
-                {mockData.upcoming.map((item, index) => (
-                  <div key={index} className="upcoming-item">
-                    <div className="upcoming-icon">
-                      {item.type === 'appointment' && <Calendar className="icon" />}
-                      {item.type === 'lab' && <Activity className="icon" />}
-                    </div>
-                    <div className="upcoming-content">
-                      <h4>{item.title}</h4>
-                      <p>{item.date} at {item.time}</p>
-                    </div>
-                    <button className="reminder-button">Set Reminder</button>
                   </div>
                 ))}
               </div>
@@ -233,6 +370,7 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="dashboard">
+      <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
       {/* Header */}
       <header className="dashboard-header">
         <div className="header-left">

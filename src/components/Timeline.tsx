@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { 
   ArrowLeft, 
   Activity, 
@@ -17,10 +17,39 @@ import {
   Settings,
   Bell
 } from 'lucide-react';
+import { track, SINGLE_PANE_EVENTS } from '../lib/analytics';
+import LabTrendSparkline from './LabTrendSparkline';
+import LabTrendDrawer from './LabTrendDrawer';
+
+interface TimelineEvent {
+  id: number;
+  date: string;
+  type: string;
+  title: string;
+  description: string;
+  details: Record<string, any>;
+  provider: string;
+  location: string;
+  status: string;
+  trend?: number[];
+}
 
 const Timeline: React.FC = () => {
-  const [selectedFilter, setSelectedFilter] = useState('all');
-  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [selectedFilter, setSelectedFilter] = useState(() => searchParams.get('filter') || 'all');
+  const [selectedDateRange, setSelectedDateRange] = useState(() => searchParams.get('range') || 'all');
+  const [searchQuery, setSearchQuery] = useState<string>(() => searchParams.get('search') || '');
+  const [selectedLab, setSelectedLab] = useState<TimelineEvent | null>(null);
+  const [isLabDrawerOpen, setIsLabDrawerOpen] = useState(false);
+
+
+
+  const dateRangePresets = [
+    { value: '30d', label: '30 Days', days: 30 },
+    { value: '90d', label: '90 Days', days: 90 },
+    { value: '1y', label: '1 Year', days: 365 },
+    { value: 'all', label: 'All Time', days: 0 }
+  ];
 
   const mockTimelineData = [
     {
@@ -36,7 +65,9 @@ const Timeline: React.FC = () => {
         status: 'Normal'
       },
       provider: 'Epic MyChart',
-      location: 'City General Hospital'
+      location: 'City General Hospital',
+      status: 'normal',
+      trend: [6.1, 6.3, 6.2, 6.0, 6.2]
     },
     {
       id: 2,
@@ -51,7 +82,8 @@ const Timeline: React.FC = () => {
         status: 'Active'
       },
       provider: 'Dr. Patel',
-      location: 'Primary Care Clinic'
+      location: 'Primary Care Clinic',
+      status: 'active'
     },
     {
       id: 3,
@@ -66,7 +98,8 @@ const Timeline: React.FC = () => {
         status: 'Completed'
       },
       provider: 'Dr. Patel',
-      location: 'Primary Care Clinic'
+      location: 'Primary Care Clinic',
+      status: 'completed'
     },
     {
       id: 4,
@@ -81,7 +114,8 @@ const Timeline: React.FC = () => {
         status: 'Active'
       },
       provider: 'Dr. Patel',
-      location: 'Primary Care Clinic'
+      location: 'Primary Care Clinic',
+      status: 'active'
     },
     {
       id: 5,
@@ -96,7 +130,8 @@ const Timeline: React.FC = () => {
         status: 'Completed'
       },
       provider: 'Dr. Patel',
-      location: 'Primary Care Clinic'
+      location: 'Primary Care Clinic',
+      status: 'completed'
     },
     {
       id: 6,
@@ -112,7 +147,9 @@ const Timeline: React.FC = () => {
         status: 'Borderline High'
       },
       provider: 'Epic MyChart',
-      location: 'City General Hospital'
+      location: 'City General Hospital',
+      status: 'borderline',
+      trend: [225, 220, 215, 220, 220]
     },
     {
       id: 7,
@@ -128,7 +165,8 @@ const Timeline: React.FC = () => {
         status: 'Completed'
       },
       provider: 'Dr. Smith',
-      location: 'Urgent Care'
+      location: 'Urgent Care',
+      status: 'completed'
     },
     {
       id: 8,
@@ -143,7 +181,8 @@ const Timeline: React.FC = () => {
         status: 'Completed'
       },
       provider: 'Dr. Smith',
-      location: 'Urgent Care'
+      location: 'Urgent Care',
+      status: 'completed'
     },
     {
       id: 9,
@@ -158,10 +197,26 @@ const Timeline: React.FC = () => {
         status: 'Chronic'
       },
       provider: 'Dr. Patel',
-      location: 'Primary Care Clinic'
+      location: 'Primary Care Clinic',
+      status: 'chronic'
     },
     {
       id: 10,
+      date: '2021-01-12',
+      type: 'lab',
+      title: 'A1C Test',
+      description: 'Hemoglobin A1C for diabetes monitoring',
+      details: {
+        a1c: '5.8%',
+        status: 'Normal'
+      },
+      provider: 'Epic MyChart',
+      location: 'City General Hospital',
+      status: 'normal',
+      trend: [5.9, 5.8, 5.7, 5.8, 5.8]
+    },
+    {
+      id: 11,
       date: '2021-01-12',
       type: 'visit',
       title: 'Annual Physical',
@@ -173,9 +228,29 @@ const Timeline: React.FC = () => {
         status: 'Completed'
       },
       provider: 'Dr. Patel',
-      location: 'Primary Care Clinic'
+      location: 'Primary Care Clinic',
+      status: 'completed'
     }
   ];
+
+  // Clear all filters function
+  const clearAllFilters = () => {
+    setSelectedFilter('all');
+    setSelectedDateRange('all');
+    setSearchQuery('');
+    setSearchParams(new URLSearchParams());
+  };
+
+  // Handle lab trend drawer
+  const openLabTrend = (lab: TimelineEvent) => {
+    setSelectedLab(lab);
+    setIsLabDrawerOpen(true);
+  };
+
+  const closeLabTrend = () => {
+    setIsLabDrawerOpen(false);
+    setSelectedLab(null);
+  };
 
   const getTypeIcon = (type: string) => {
     switch (type) {
@@ -207,13 +282,68 @@ const Timeline: React.FC = () => {
     }
   };
 
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'normal':
+      case 'completed':
+        return '#10b981'; // Green
+      case 'active':
+      case 'scheduled':
+        return '#f59e0b'; // Yellow
+      case 'borderline':
+      case 'overdue':
+      case 'abnormal':
+        return '#ef4444'; // Red
+      case 'chronic':
+        return '#8b5cf6'; // Purple
+      default:
+        return '#6b7280'; // Gray
+    }
+  };
+
+  // Update URL when filters change
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (selectedFilter !== 'all') params.set('filter', selectedFilter);
+    if (selectedDateRange !== 'all') params.set('range', selectedDateRange);
+    if (searchQuery) params.set('search', searchQuery);
+    
+    setSearchParams(params);
+    
+    // Track filter changes
+    track(SINGLE_PANE_EVENTS.TIMELINE_FILTER_CHANGED, {
+      filter: selectedFilter,
+      dateRange: selectedDateRange,
+      hasSearch: !!searchQuery
+    });
+  }, [selectedFilter, selectedDateRange, searchQuery, setSearchParams]);
+
   const filteredData = mockTimelineData.filter(item => {
+    // Type filtering
     const matchesFilter = selectedFilter === 'all' || item.type === selectedFilter;
+    
+    // Search filtering
     const matchesSearch = searchQuery === '' || 
       item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.description.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesFilter && matchesSearch;
+    
+    // Date range filtering
+    let matchesDateRange = true;
+    if (selectedDateRange !== 'all') {
+      const itemDate = new Date(item.date);
+      const cutoffDate = new Date();
+      const preset = dateRangePresets.find(p => p.value === selectedDateRange);
+      
+      if (preset && preset.days > 0) {
+        cutoffDate.setDate(cutoffDate.getDate() - preset.days);
+        matchesDateRange = itemDate >= cutoffDate;
+      }
+    }
+    
+    return matchesFilter && matchesSearch && matchesDateRange;
   });
+
+
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -306,7 +436,9 @@ const Timeline: React.FC = () => {
           
           <div className="timeline-container">
 
-        {/* Filters and Search */}
+
+
+        {/* Enhanced Filters and Search */}
         <div className="timeline-controls">
           <div className="search-container">
             <Search className="search-icon" />
@@ -319,19 +451,51 @@ const Timeline: React.FC = () => {
             />
           </div>
           
-          <div className="filter-container">
-            <Filter className="filter-icon" />
-            <select
-              value={selectedFilter}
-              onChange={(e) => setSelectedFilter(e.target.value)}
-              className="filter-select"
-            >
-              <option value="all">All Events</option>
-              <option value="lab">Lab Results</option>
-              <option value="prescription">Medications</option>
-              <option value="visit">Visits</option>
-              <option value="diagnosis">Diagnoses</option>
-            </select>
+          <div className="filter-section">
+            <div className="filter-pills">
+              <button
+                className={`filter-pill ${selectedFilter === 'all' ? 'active' : ''}`}
+                onClick={() => setSelectedFilter('all')}
+              >
+                All
+              </button>
+              <button
+                className={`filter-pill ${selectedFilter === 'lab' ? 'active' : ''}`}
+                onClick={() => setSelectedFilter('lab')}
+              >
+                Labs
+              </button>
+              <button
+                className={`filter-pill ${selectedFilter === 'prescription' ? 'active' : ''}`}
+                onClick={() => setSelectedFilter('prescription')}
+              >
+                Medications
+              </button>
+              <button
+                className={`filter-pill ${selectedFilter === 'visit' ? 'active' : ''}`}
+                onClick={() => setSelectedFilter('visit')}
+              >
+                Visits
+              </button>
+              <button
+                className={`filter-pill ${selectedFilter === 'diagnosis' ? 'active' : ''}`}
+                onClick={() => setSelectedFilter('diagnosis')}
+              >
+                Diagnoses
+              </button>
+            </div>
+            
+            <div className="date-range-presets">
+              {dateRangePresets.map((preset) => (
+                <button
+                  key={preset.value}
+                  className={`date-preset ${selectedDateRange === preset.value ? 'active' : ''}`}
+                  onClick={() => setSelectedDateRange(preset.value)}
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -342,6 +506,7 @@ const Timeline: React.FC = () => {
               <div className="event-marker" style={{ backgroundColor: getTypeColor(event.type) }}>
                 {getTypeIcon(event.type)}
               </div>
+              <div className="event-status-indicator" style={{ backgroundColor: getStatusColor(event.status) }}></div>
               
               <div className="event-content">
                 <div className="event-header">
@@ -376,6 +541,16 @@ const Timeline: React.FC = () => {
                     <span className="location-label">Location:</span>
                     <span className="location-name">{event.location}</span>
                   </div>
+                  {event.type === 'lab' && event.trend && (
+                    <button 
+                      className="view-trend-button"
+                      onClick={() => openLabTrend(event)}
+                      aria-label={`View trend for ${event.title}`}
+                    >
+                      <TrendingUp className="icon" />
+                      View Trend
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -386,10 +561,7 @@ const Timeline: React.FC = () => {
           <div className="no-results">
             <p>No events found matching your criteria.</p>
             <button 
-              onClick={() => {
-                setSelectedFilter('all');
-                setSearchQuery('');
-              }}
+              onClick={clearAllFilters}
               className="clear-filters-button"
             >
               Clear Filters
@@ -399,6 +571,38 @@ const Timeline: React.FC = () => {
           </div>
         </main>
       </div>
+
+      {/* Lab Trend Drawer */}
+      {selectedLab && (
+        <LabTrendDrawer
+          isOpen={isLabDrawerOpen}
+          onClose={closeLabTrend}
+                  labData={(() => {
+          if (!selectedLab.trend) {
+            return {
+              name: selectedLab.title,
+              unit: 'mg/dL',
+              results: [],
+              referenceRange: { min: 100, max: 200 },
+              description: selectedLab.description
+            };
+          }
+          
+          const trendLength = selectedLab.trend.length;
+          return {
+            name: selectedLab.title,
+            unit: 'mg/dL',
+            results: selectedLab.trend.map((value: number, index: number) => ({
+              date: new Date(Date.now() - (trendLength - 1 - index) * 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+              value: value,
+              status: value > 200 ? 'high' : value < 100 ? 'low' : 'normal'
+            })),
+            referenceRange: { min: 100, max: 200 },
+            description: selectedLab.description
+          };
+        })()}
+        />
+      )}
     </div>
   );
 };
