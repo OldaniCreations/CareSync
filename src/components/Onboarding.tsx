@@ -213,10 +213,6 @@ const Onboarding: React.FC = () => {
                 <button className="connect-button secondary">Add</button>
               </div>
             </div>
-            
-            <div className="demo-note">
-              <p>💡 This is a demo - clicking "Connect" will simulate the connection process with sample data.</p>
-            </div>
           </div>
         );
       
@@ -257,10 +253,6 @@ const Onboarding: React.FC = () => {
                 </div>
               </div>
             </div>
-            
-            <div className="demo-note">
-              <p>💡 This shows sample data for demonstration. Your actual timeline will populate as you connect providers.</p>
-            </div>
           </div>
         );
       
@@ -277,7 +269,6 @@ const Onboarding: React.FC = () => {
               <div className="share-option">
                 <h4>Share Lab Results</h4>
                 <p>Generate a secure link to share your latest CBC results</p>
-                <button className="share-button">Generate Link</button>
                 <div className="generated-link">
                   <p>https://caresync.health/share/abc123</p>
                   <span className="expires">Expires in 24 hours</span>
@@ -287,7 +278,6 @@ const Onboarding: React.FC = () => {
               <div className="share-option">
                 <h4>QR Code Sharing</h4>
                 <p>Create a QR code for in-person sharing</p>
-                <button className="share-button">Generate QR Code</button>
                 <div className="qr-placeholder">
                   <div className="qr-code">📱</div>
                   <span>QR Code Generated</span>
@@ -297,16 +287,11 @@ const Onboarding: React.FC = () => {
               <div className="share-option">
                 <h4>Invite Provider</h4>
                 <p>Send an invitation to your healthcare provider</p>
-                <button className="share-button">Send Invite</button>
                 <div className="invite-status">
                   <CheckCircle className="check-icon" />
                   <span>Invite sent to Dr. Patel</span>
                 </div>
               </div>
-            </div>
-            
-            <div className="demo-note">
-              <p>💡 All sharing features are fully functional in this demo. Try clicking the buttons!</p>
             </div>
           </div>
         );
