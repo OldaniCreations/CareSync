@@ -189,7 +189,7 @@ const Privacy: React.FC = () => {
             
             <div className="nav-divider"></div>
             
-            <Link to="/dashboard" className="nav-item">
+            <Link to="/settings" className="nav-item">
               <Settings className="icon" />
               Settings
             </Link>

@@ -7,6 +7,7 @@ import Dashboard from './components/Dashboard';
 import Timeline from './components/Timeline';
 import SmartSharing from './components/SmartSharing';
 import Privacy from './pages/settings/Privacy';
+import Settings from './pages/settings/Settings';
 import './App.css';
 import './components.css';
 
@@ -32,6 +33,7 @@ function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/timeline" element={<Timeline />} />
           <Route path="/sharing" element={<SmartSharing />} />
+          <Route path="/settings" element={<Settings />} />
           <Route path="/settings/privacy" element={<Privacy />} />
           <Route path="/privacy" element={<Privacy />} />
         </Routes>

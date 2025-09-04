@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Calendar, 
@@ -15,7 +15,7 @@ import {
   Lock
 } from 'lucide-react';
 import TrustBanner from './TrustBanner';
-import { FEATURE_TRUST_UI_V1, FEATURE_SINGLE_PANE_V2 } from '../lib/featureFlags';
+import { FEATURE_TRUST_UI_V1 } from '../lib/featureFlags';
 import ExpandableCard from './ExpandableCard';
 import ToastContainer from './ToastContainer';
 import { useToast } from '../hooks/useToast';
@@ -23,7 +23,12 @@ import { track, SINGLE_PANE_EVENTS } from '../lib/analytics';
 
 const Dashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState('overview');
-  const { toasts, showSuccess, showError, showInfo, removeToast } = useToast();
+  const { toasts, showSuccess, showInfo, removeToast } = useToast();
+
+  // Ensure overview tab is active when component mounts
+  useEffect(() => {
+    setActiveTab('overview');
+  }, []);
 
   // Quick Action Handlers
   const handleQuickAction = (action: string, entityId: string, entityType: string) => {
@@ -75,7 +80,7 @@ const Dashboard: React.FC = () => {
       { type: 'lab', title: 'Annual Blood Work', date: 'Feb 1, 2024', time: '9:00 AM', provider: 'LabCorp', location: 'Main Street Lab', status: 'scheduled' }
     ],
     quickStats: [
-      { label: 'Upcoming Visits', value: '1', icon: Calendar, color: '#f59e0b' },
+      { label: 'Upcoming Visits', value: '2', icon: Calendar, color: '#f59e0b' },
       { label: 'Recent Labs', value: '3', icon: Activity, color: '#10b981' },
       { label: 'Active Medications', value: '2', icon: Pill, color: '#007C9E' },
       { label: 'Shared Records', value: '5', icon: FileText, color: '#8b5cf6' }
@@ -400,13 +405,16 @@ const Dashboard: React.FC = () => {
         {/* Sidebar */}
         <aside className="dashboard-sidebar">
           <nav className="sidebar-nav">
-            <button className="nav-item active">
+            <button 
+              className={`nav-item ${activeTab === 'overview' ? 'active' : ''}`}
+              onClick={() => setActiveTab('overview')}
+            >
               <TrendingUp className="icon" />
               Overview
             </button>
             
             <button 
-              className="nav-item"
+              className={`nav-item ${activeTab === 'records' ? 'active' : ''}`}
               onClick={() => setActiveTab('records')}
             >
               <FileText className="icon" />
@@ -425,7 +433,7 @@ const Dashboard: React.FC = () => {
             
             <div className="nav-divider"></div>
             
-            <Link to="/dashboard" className="nav-item">
+            <Link to="/settings" className="nav-item">
               <Settings className="icon" />
               Settings
             </Link>
