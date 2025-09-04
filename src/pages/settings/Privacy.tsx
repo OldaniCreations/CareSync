@@ -186,18 +186,19 @@ const Privacy: React.FC = () => {
               <Shield className="icon" />
               Sharing
             </Link>
-          </nav>
-          
-          <div className="sidebar-footer">
-            <div className="nav-item">
+            
+            <div className="nav-divider"></div>
+            
+            <Link to="/dashboard" className="nav-item">
               <Settings className="icon" />
               Settings
-            </div>
+            </Link>
+            
             <Link to="/privacy" className="nav-item active">
               <Shield className="icon" />
               Privacy & Security
             </Link>
-          </div>
+          </nav>
         </aside>
 
         {/* Main Area */}

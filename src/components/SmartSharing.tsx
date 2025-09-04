@@ -339,14 +339,19 @@ const SmartSharing: React.FC = () => {
               <Shield className="icon" />
               Sharing
             </button>
-          </nav>
-          
-          <div className="sidebar-footer">
+            
+            <div className="nav-divider"></div>
+            
             <Link to="/dashboard" className="nav-item">
               <Settings className="icon" />
               Settings
             </Link>
-          </div>
+            
+            <Link to="/privacy" className="nav-item">
+              <Shield className="icon" />
+              Privacy & Security
+            </Link>
+          </nav>
         </aside>
 
         {/* Main Area */}

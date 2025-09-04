@@ -400,16 +400,13 @@ const Dashboard: React.FC = () => {
         {/* Sidebar */}
         <aside className="dashboard-sidebar">
           <nav className="sidebar-nav">
-            <button 
-              className={`nav-item ${activeTab === 'overview' ? 'active' : ''}`}
-              onClick={() => setActiveTab('overview')}
-            >
+            <button className="nav-item active">
               <TrendingUp className="icon" />
               Overview
             </button>
             
             <button 
-              className={`nav-item ${activeTab === 'records' ? 'active' : ''}`}
+              className="nav-item"
               onClick={() => setActiveTab('records')}
             >
               <FileText className="icon" />
@@ -421,25 +418,23 @@ const Dashboard: React.FC = () => {
               Timeline
             </Link>
             
-            <button 
-              className={`nav-item ${activeTab === 'sharing' ? 'active' : ''}`}
-              onClick={() => setActiveTab('sharing')}
-            >
+            <Link to="/sharing" className="nav-item">
               <Shield className="icon" />
               Sharing
-            </button>
-          </nav>
-          
-          <div className="sidebar-footer">
-            <div className="nav-item">
+            </Link>
+            
+            <div className="nav-divider"></div>
+            
+            <Link to="/dashboard" className="nav-item">
               <Settings className="icon" />
               Settings
-            </div>
+            </Link>
+            
             <Link to="/privacy" className="nav-item">
               <Shield className="icon" />
               Privacy & Security
             </Link>
-          </div>
+          </nav>
         </aside>
 
         {/* Main Area */}
